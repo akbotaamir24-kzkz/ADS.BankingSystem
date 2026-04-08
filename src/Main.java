@@ -1,15 +1,12 @@
-import java.util.LinkedList;
 import java.util.Scanner;
-import java.util.Stack;
-import java.util.Queue;
 
 public class Main {
 
-    static LinkedList<BankAccount> accounts = new LinkedList<>();
+    static myLinkedList accounts = new myLinkedList();
+    static myStack history = new myStack(100);
+    static myQueue billQueue = new myQueue();
+    static myQueueAccount accountRequests = new myQueueAccount();
     static Scanner sc = new Scanner(System.in);
-    static Stack<String> history = new Stack<>();
-    static Queue<String> billQueue = new LinkedList<>();
-    static Queue<BankAccount> accountRequests = new LinkedList<>();
 
     public static void addRequest() {
         System.out.print("Enter account number: ");
@@ -28,7 +25,6 @@ public class Main {
         System.out.println("Request added to queue");
     }
 
-
     public static void processRequest() {
         if (accountRequests.isEmpty()) {
             System.out.println("No requests to process");
@@ -41,7 +37,6 @@ public class Main {
         System.out.println("Account created: " + request.username);
     }
 
-
     public static void showRequests() {
         if (accountRequests.isEmpty()) {
             System.out.println("No pending requests");
@@ -49,61 +44,51 @@ public class Main {
         }
 
         System.out.println("Pending requests:");
-        for (BankAccount acc : accountRequests) {
-            System.out.println(acc);
-        }
+        accountRequests.show();
     }
-
 
     public static void deposit() {
         System.out.print("Enter username: ");
         String name = sc.nextLine();
 
-        for (BankAccount acc : accounts) {
-            if (acc.username.equalsIgnoreCase(name)) {
+        BankAccount acc = accounts.search(name);
 
-                System.out.print("Enter deposit amount: ");
-                double amount = sc.nextDouble();
-                sc.nextLine();
+        if (acc != null) {
+            System.out.print("Enter deposit amount: ");
+            double amount = sc.nextDouble();
+            sc.nextLine();
 
-                acc.balance += amount;
+            acc.balance += amount;
+            history.push("Deposit " + amount + " to " + acc.username);
 
-                history.push("Deposit" + amount + "to" + acc.username);
-
-                System.out.println("New balance: " + acc.balance);
-                return;
-            }
+            System.out.println("New balance: " + acc.balance);
+        } else {
+            System.out.println("Account not found");
         }
-        System.out.println("Account not found");
     }
-
 
     public static void withdraw() {
         System.out.print("Enter username: ");
         String name = sc.nextLine();
 
-        for (BankAccount acc : accounts) {
-            if (acc.username.equalsIgnoreCase(name)) {
+        BankAccount acc = accounts.search(name);
 
-                System.out.print("Enter withdraw amount: ");
-                double amount = sc.nextDouble();
-                sc.nextLine();
+        if (acc != null) {
+            System.out.print("Enter withdraw amount: ");
+            double amount = sc.nextDouble();
+            sc.nextLine();
 
-                if (acc.balance >= amount) {
-                    acc.balance -= amount;
-
-                    history.push("Withdraw" + amount + "from" + acc.username);
-
-                    System.out.println("New balance: " + acc.balance);
-                } else {
-                    System.out.println("Not enough balance!");
-                }
-                return;
+            if (acc.balance >= amount) {
+                acc.balance -= amount;
+                history.push("Withdraw " + amount + " from " + acc.username);
+                System.out.println("New balance: " + acc.balance);
+            } else {
+                System.out.println("Not enough balance!");
             }
+        } else {
+            System.out.println("Account not found");
         }
-        System.out.println("Account not found");
     }
-
 
     public static void showLastTransaction() {
         if (history.isEmpty()) {
@@ -114,7 +99,6 @@ public class Main {
         System.out.println("Last transaction: " + history.peek());
     }
 
-
     public static void undoTransaction() {
         if (history.isEmpty()) {
             System.out.println("Nothing to undo");
@@ -122,7 +106,7 @@ public class Main {
         }
 
         String removed = history.pop();
-        System.out.println("Undo → " + removed + " removed");
+        System.out.println("Undo -> " + removed + " removed");
     }
 
     public static void addBill() {
@@ -130,7 +114,6 @@ public class Main {
         String bill = sc.nextLine();
 
         billQueue.add(bill);
-
         System.out.println("Added: " + bill);
     }
 
@@ -150,23 +133,22 @@ public class Main {
             return;
         }
 
-        System.out.println("Current queue: " + billQueue);
+        System.out.println("Current queue:");
+        billQueue.show();
     }
 
     public static void searchAccount() {
         System.out.print("Enter username to search: ");
         String name = sc.nextLine();
 
-        for (BankAccount acc : accounts) {
-            if (acc.username.equalsIgnoreCase(name)) {
-                System.out.println("Found: " + acc);
-                return;
-            }
+        BankAccount acc = accounts.search(name);
+
+        if (acc != null) {
+            System.out.println("Found: " + acc);
+        } else {
+            System.out.println("Account not found");
         }
-
-        System.out.println("Account not found");
     }
-
 
     public static void addAccount() {
         System.out.print("Enter account number: ");
@@ -185,18 +167,14 @@ public class Main {
         System.out.println("Account added successfully!");
     }
 
-
     public static void showAccounts() {
-        if (accounts.isEmpty()) {
+        if (accounts.size() == 0) {
             System.out.println("No accounts found");
             return;
         }
 
-        for (BankAccount acc : accounts) {
-            System.out.println(acc);
-        }
+        accounts.showAccounts();
     }
-
 
     public static void bankMenu() {
         while (true) {
@@ -204,7 +182,8 @@ public class Main {
             System.out.println("1 - Submit account request");
             System.out.println("2 - Deposit");
             System.out.println("3 - Withdraw");
-            System.out.println("4 - Back");
+            System.out.println("4 - Add bill");
+            System.out.println("5 - Back");
 
             int choice = sc.nextInt();
             sc.nextLine();
@@ -216,7 +195,11 @@ public class Main {
             } else if (choice == 3) {
                 withdraw();
             } else if (choice == 4) {
+                addBill();
+            } else if (choice == 5) {
                 break;
+            } else {
+                System.out.println("Invalid choice");
             }
         }
     }
@@ -226,7 +209,10 @@ public class Main {
             System.out.println("\n=== ATM MENU ===");
             System.out.println("1 - Check balance");
             System.out.println("2 - Withdraw");
-            System.out.println("3 - Back");
+            System.out.println("3 - Search account");
+            System.out.println("4 - Show last transaction");
+            System.out.println("5 - Undo transaction");
+            System.out.println("6 - Back");
 
             int choice = sc.nextInt();
             sc.nextLine();
@@ -236,7 +222,15 @@ public class Main {
             } else if (choice == 2) {
                 withdraw();
             } else if (choice == 3) {
+                searchAccount();
+            } else if (choice == 4) {
+                showLastTransaction();
+            } else if (choice == 5) {
+                undoTransaction();
+            } else if (choice == 6) {
                 break;
+            } else {
+                System.out.println("Invalid choice");
             }
         }
     }
@@ -247,7 +241,9 @@ public class Main {
             System.out.println("1 - Process account requests");
             System.out.println("2 - Show requests");
             System.out.println("3 - Show bill queue");
-            System.out.println("4 - Back");
+            System.out.println("4 - Process bill");
+            System.out.println("5 - Show accounts");
+            System.out.println("6 - Back");
 
             int choice = sc.nextInt();
             sc.nextLine();
@@ -259,11 +255,16 @@ public class Main {
             } else if (choice == 3) {
                 showBills();
             } else if (choice == 4) {
+                processBill();
+            } else if (choice == 5) {
+                showAccounts();
+            } else if (choice == 6) {
                 break;
+            } else {
+                System.out.println("Invalid choice");
             }
         }
     }
-
 
     public static void main(String[] args) {
 
@@ -275,8 +276,9 @@ public class Main {
         predefinedAccounts[1] = new BankAccount("A002", "Sara", 220000);
         predefinedAccounts[2] = new BankAccount("A003", "Dana", 180000);
 
-        for (BankAccount acc : predefinedAccounts) {
-            System.out.println(acc);
+        for (int i = 0; i < predefinedAccounts.length; i++) {
+            System.out.println(predefinedAccounts[i]);
+            accounts.add(predefinedAccounts[i]);
         }
 
         while (true) {
@@ -296,9 +298,11 @@ public class Main {
             } else if (choice == 3) {
                 adminMenu();
             } else if (choice == 4) {
+                System.out.println("Goodbye!");
                 break;
+            } else {
+                System.out.println("Invalid choice");
             }
         }
-
     }
 }
